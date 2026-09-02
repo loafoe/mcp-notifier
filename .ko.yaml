@@ -1,0 +1,3 @@
+# mcp-notifier only makes outbound HTTPS calls to webhook endpoints, so the
+# distroless static base (ko's default) is sufficient: no shell needed.
+defaultBaseImage: cgr.dev/chainguard/static:latest

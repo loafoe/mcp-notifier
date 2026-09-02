@@ -1,0 +1,27 @@
+# mcp-notifier example configuration.
+#
+# Values may reference environment variables via ${VAR_NAME}, so webhook
+# URLs can be injected as Kubernetes Secret-backed env vars while the rest
+# of this file lives in a plain ConfigMap.
+#
+# Each provider supports multiple named webhook targets ("channels"). A
+# "default" target is required if the provider section is present at all.
+# Provider sections with no webhooks configured are skipped entirely (their
+# tools won't be registered).
+
+slack:
+  webhooks:
+    default:
+      webhook_url: "${SLACK_DEFAULT_WEBHOOK_URL}"
+      username: "mcp-notifier"
+      icon_emoji: ":bell:"
+    alerts:
+      webhook_url: "${SLACK_ALERTS_WEBHOOK_URL}"
+      username: "alerts-bot"
+      icon_emoji: ":rotating_light:"
+
+teams:
+  webhooks:
+    default:
+      webhook_url: "${TEAMS_DEFAULT_WEBHOOK_URL}"
+      title: "Notification"

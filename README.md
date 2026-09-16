@@ -1,11 +1,11 @@
 # mcp-notifier
 
 A standalone [MCP](https://modelcontextprotocol.io) server that sends
-notifications to Slack (Incoming Webhooks) and Microsoft Teams (Power
-Automate workflow webhooks). Extracted from
-[picoclaw](https://github.com/sipeed/picoclaw)'s `slack_webhook` and
-`teams_webhook` channels so any MCP client can use the same notification
-capability.
+notifications to Slack (Incoming Webhooks), Microsoft Teams (Power Automate
+workflow webhooks), and Telegram (Bot API). Extracted from
+[picoclaw](https://github.com/sipeed/picoclaw)'s `slack_webhook`,
+`teams_webhook`, and `telegram` channels so any MCP client can use the same
+notification capability.
 
 Built with the official
 [modelcontextprotocol/go-sdk](https://github.com/modelcontextprotocol/go-sdk).
@@ -18,6 +18,10 @@ Built with the official
 - `send_teams_notification(channel?, message)` — sends `message` as an
   Adaptive Card to the named Teams webhook target. Markdown tables are
   rendered as native Adaptive Card tables.
+- `send_telegram_notification(channel?, message)` — sends `message` (Markdown,
+  converted to Telegram's HTML message format: bold/italic/strikethrough/
+  links/lists/code blocks, with tables rendered as monospace blocks) to the
+  named Telegram bot/chat target.
 - `list_channels()` — lists configured providers and their named webhook
   targets.
 
@@ -46,6 +50,12 @@ teams:
     default:
       webhook_url: "${TEAMS_DEFAULT_WEBHOOK_URL}"
       title: "Notification"
+
+telegram:
+  bots:
+    default:
+      bot_token: "${TELEGRAM_DEFAULT_BOT_TOKEN}"
+      chat_id: "${TELEGRAM_DEFAULT_CHAT_ID}"
 ```
 
 - Every provider section that's present requires a `default` target.
@@ -53,6 +63,17 @@ teams:
   load time), so webhook URLs can be injected from a Kubernetes Secret while
   the rest of the config lives in a plain ConfigMap.
 - `webhook_url` must be `https://`.
+
+### Telegram bot setup
+
+Create a bot account via [@BotFather](https://t.me/BotFather) (`/newbot`) to
+get `bot_token`. `chat_id` is the numeric chat/group/channel ID the bot has
+been added to (or `@channelusername` for public channels) — the simplest way
+to find a chat's numeric ID is to send it a message and check
+`https://api.telegram.org/bot<token>/getUpdates`. An optional
+`api_base_url` per target points at a self-hosted
+[Telegram Bot API server](https://github.com/tdlib/telegram-bot-api) instead
+of `api.telegram.org`.
 
 ## Running
 

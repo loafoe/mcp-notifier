@@ -25,3 +25,10 @@ teams:
     default:
       webhook_url: "${TEAMS_DEFAULT_WEBHOOK_URL}"
       title: "Notification"
+
+telegram:
+  bots:
+    default:
+      bot_token: "${TELEGRAM_DEFAULT_BOT_TOKEN}"
+      chat_id: "${TELEGRAM_DEFAULT_CHAT_ID}"
+      # api_base_url: "https://your-local-bot-api-server"  # optional: self-hosted Bot API server

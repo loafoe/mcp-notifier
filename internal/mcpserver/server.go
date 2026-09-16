@@ -13,6 +13,7 @@ import (
 	"github.com/loafoe/mcp-notifier/internal/config"
 	"github.com/loafoe/mcp-notifier/internal/notify/slack"
 	"github.com/loafoe/mcp-notifier/internal/notify/teams"
+	"github.com/loafoe/mcp-notifier/internal/notify/telegram"
 )
 
 // Version is set at build time via -ldflags.
@@ -48,7 +49,15 @@ func New(cfg *config.Config, logger *slog.Logger) *mcp.Server {
 			teamsNotifier, logger)
 	}
 
-	registerListChannelsTool(server, slackNotifier, teamsNotifier)
+	var telegramNotifier *telegram.Notifier
+	if len(cfg.Telegram.Bots) > 0 {
+		telegramNotifier = telegram.New(cfg.Telegram.Bots)
+		registerSendTool(server, "send_telegram_notification",
+			"Send a message to a Telegram chat via a Bot API bot account. Supports Markdown (bold, italics, strikethrough, links, lists, tables, code blocks), which is converted to Telegram's HTML message format.",
+			telegramNotifier, logger)
+	}
+
+	registerListChannelsTool(server, slackNotifier, teamsNotifier, telegramNotifier)
 
 	return server
 }
@@ -95,7 +104,7 @@ type listChannelsOutput struct {
 	Providers []providerChannels `json:"providers"`
 }
 
-func registerListChannelsTool(server *mcp.Server, slackNotifier *slack.Notifier, teamsNotifier *teams.Notifier) {
+func registerListChannelsTool(server *mcp.Server, slackNotifier *slack.Notifier, teamsNotifier *teams.Notifier, telegramNotifier *telegram.Notifier) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_channels",
 		Description: "List the configured notification providers and their named webhook channels.",
@@ -111,6 +120,11 @@ func registerListChannelsTool(server *mcp.Server, slackNotifier *slack.Notifier,
 			targets := teamsNotifier.Targets()
 			sort.Strings(targets)
 			out.Providers = append(out.Providers, providerChannels{Provider: "teams", Channels: targets})
+		}
+		if telegramNotifier != nil {
+			targets := telegramNotifier.Targets()
+			sort.Strings(targets)
+			out.Providers = append(out.Providers, providerChannels{Provider: "telegram", Channels: targets})
 		}
 
 		return nil, out, nil

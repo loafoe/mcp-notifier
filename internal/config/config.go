@@ -1,5 +1,6 @@
 // Package config loads mcp-notifier's YAML configuration: a set of named
-// webhook targets per notification provider (Slack, Microsoft Teams).
+// webhook targets per notification provider (Slack, Microsoft Teams,
+// Telegram).
 package config
 
 import (
@@ -12,8 +13,9 @@ import (
 
 // Config is the top-level mcp-notifier configuration.
 type Config struct {
-	Slack SlackConfig `yaml:"slack"`
-	Teams TeamsConfig `yaml:"teams"`
+	Slack    SlackConfig    `yaml:"slack"`
+	Teams    TeamsConfig    `yaml:"teams"`
+	Telegram TelegramConfig `yaml:"telegram"`
 }
 
 // SlackConfig configures the Slack Incoming Webhook provider.
@@ -37,6 +39,22 @@ type TeamsConfig struct {
 type TeamsTarget struct {
 	WebhookURL string `yaml:"webhook_url"`
 	Title      string `yaml:"title"`
+}
+
+// TelegramConfig configures the Telegram Bot API provider.
+type TelegramConfig struct {
+	Bots map[string]TelegramTarget `yaml:"bots"`
+}
+
+// TelegramTarget is a single named Telegram bot/chat destination. BotToken
+// authenticates as a Telegram bot account (created via @BotFather); ChatID
+// is the numeric chat/channel ID or "@channelusername" the bot has been
+// added to. APIBaseURL optionally points at a self-hosted Telegram Bot API
+// server instead of api.telegram.org.
+type TelegramTarget struct {
+	BotToken   string `yaml:"bot_token"`
+	ChatID     string `yaml:"chat_id"`
+	APIBaseURL string `yaml:"api_base_url,omitempty"`
 }
 
 // Load reads and parses the config file at path. Values may reference
@@ -95,6 +113,20 @@ func (c *Config) Validate() error {
 	if len(c.Teams.Webhooks) > 0 {
 		if _, ok := c.Teams.Webhooks["default"]; !ok {
 			return fmt.Errorf("config: teams: a %q webhook target is required", "default")
+		}
+	}
+
+	for name, target := range c.Telegram.Bots {
+		if strings.TrimSpace(target.BotToken) == "" {
+			return fmt.Errorf("config: telegram bot %q: empty bot_token", name)
+		}
+		if strings.TrimSpace(target.ChatID) == "" {
+			return fmt.Errorf("config: telegram bot %q: empty chat_id", name)
+		}
+	}
+	if len(c.Telegram.Bots) > 0 {
+		if _, ok := c.Telegram.Bots["default"]; !ok {
+			return fmt.Errorf("config: telegram: a %q bot target is required", "default")
 		}
 	}
 

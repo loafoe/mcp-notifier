@@ -77,7 +77,54 @@ func TestLoad_EmptyConfigIsValid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if len(cfg.Slack.Webhooks) != 0 || len(cfg.Teams.Webhooks) != 0 {
+	if len(cfg.Slack.Webhooks) != 0 || len(cfg.Teams.Webhooks) != 0 || len(cfg.Telegram.Bots) != 0 {
 		t.Errorf("expected no webhooks configured, got %+v", cfg)
+	}
+}
+
+func TestLoad_Telegram(t *testing.T) {
+	t.Setenv("TEST_TELEGRAM_TOKEN", "123:abc")
+
+	path := writeConfig(t, `
+telegram:
+  bots:
+    default:
+      bot_token: "${TEST_TELEGRAM_TOKEN}"
+      chat_id: "-1001234567890"
+`)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if got := cfg.Telegram.Bots["default"].BotToken; got != "123:abc" {
+		t.Errorf("telegram bot_token = %q, want env expanded", got)
+	}
+}
+
+func TestLoad_TelegramMissingChatID(t *testing.T) {
+	path := writeConfig(t, `
+telegram:
+  bots:
+    default:
+      bot_token: "123:abc"
+`)
+
+	if _, err := Load(path); err == nil {
+		t.Fatal("Load() error = nil, want error for missing chat_id")
+	}
+}
+
+func TestLoad_TelegramMissingDefaultTarget(t *testing.T) {
+	path := writeConfig(t, `
+telegram:
+  bots:
+    other:
+      bot_token: "123:abc"
+      chat_id: "1"
+`)
+
+	if _, err := Load(path); err == nil {
+		t.Fatal("Load() error = nil, want error for missing default target")
 	}
 }

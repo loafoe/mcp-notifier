@@ -37,8 +37,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if len(cfg.Slack.Webhooks) == 0 && len(cfg.Teams.Webhooks) == 0 {
-		logger.Error("no notification providers configured: set at least one of slack.webhooks or teams.webhooks")
+	if len(cfg.Slack.Webhooks) == 0 && len(cfg.Teams.Webhooks) == 0 && len(cfg.Telegram.Bots) == 0 {
+		logger.Error("no notification providers configured: set at least one of slack.webhooks, teams.webhooks, or telegram.bots")
 		os.Exit(1)
 	}
 

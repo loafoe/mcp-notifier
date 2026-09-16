@@ -1,0 +1,37 @@
+name: Renovate
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/renovate.yaml'
+      - '.github/renovate-config.js'
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+env:
+  # renovate: datasource=npm depName=renovate
+  RENOVATE_VERSION: 43.257.8
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@3064367f740a1a91cca218698a63902689cce200 # v46.1.20
+        with:
+          renovate-version: ${{ env.RENOVATE_VERSION }}
+          token: '${{ secrets.RENOVATE_TOKEN }}'
+          configurationFile: '.github/renovate-config.js'
+        env:
+          RENOVATE_ALLOW_SCRIPTS: true
+          RENOVATE_SEPARATE_MAJOR_MINOR: false
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          LOG_LEVEL: 'info'

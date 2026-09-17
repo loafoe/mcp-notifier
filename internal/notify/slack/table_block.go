@@ -1,6 +1,14 @@
 package slack
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
+
+// cellInlineRe matches the inline Markdown styles worth preserving inside a
+// table cell: **bold**, ~~strike~~, [text](url), and *italic* (checked last
+// so it doesn't shadow **bold**).
+var cellInlineRe = regexp.MustCompile(`\*\*([^*]+)\*\*|~~([^~]+)~~|\[([^\]]+)\]\(([^)]+)\)|\*([^*]+)\*`)
 
 const (
 	maxTableRows      = 100
@@ -47,7 +55,7 @@ func buildTableBlock(tableStr string) (map[string]any, bool) {
 			if i == 0 {
 				row[j] = boldRichTextCell(cell)
 			} else {
-				row[j] = rawTextCell(cell)
+				row[j] = richTextCell(cell)
 			}
 		}
 		rows[i] = row
@@ -69,10 +77,18 @@ func buildTableBlock(tableStr string) (map[string]any, bool) {
 	}, true
 }
 
-func rawTextCell(text string) map[string]any {
+// richTextCell renders a table cell as a rich_text block, preserving inline
+// Markdown styling (bold, italic, strikethrough, links) rather than showing
+// the raw Markdown syntax the way a raw_text cell would.
+func richTextCell(text string) map[string]any {
 	return map[string]any{
-		"type": "raw_text",
-		"text": text,
+		"type": "rich_text",
+		"elements": []map[string]any{
+			{
+				"type":     "rich_text_section",
+				"elements": parseCellInline(text),
+			},
+		},
 	}
 }
 
@@ -92,4 +108,53 @@ func boldRichTextCell(text string) map[string]any {
 			},
 		},
 	}
+}
+
+// parseCellInline splits cell text into rich_text elements, converting
+// **bold**, ~~strike~~, [text](url), and *italic* spans into their rich_text
+// equivalents and leaving everything else as plain text.
+func parseCellInline(text string) []map[string]any {
+	matches := cellInlineRe.FindAllStringSubmatchIndex(text, -1)
+	if len(matches) == 0 {
+		return []map[string]any{plainTextElement(text)}
+	}
+
+	var elements []map[string]any
+	lastEnd := 0
+	for _, m := range matches {
+		if m[0] > lastEnd {
+			elements = append(elements, plainTextElement(text[lastEnd:m[0]]))
+		}
+		switch {
+		case m[2] >= 0:
+			elements = append(elements, styledTextElement(text[m[2]:m[3]], "bold"))
+		case m[4] >= 0:
+			elements = append(elements, styledTextElement(text[m[4]:m[5]], "strike"))
+		case m[6] >= 0:
+			elements = append(elements, linkElement(text[m[6]:m[7]], text[m[8]:m[9]]))
+		case m[10] >= 0:
+			elements = append(elements, styledTextElement(text[m[10]:m[11]], "italic"))
+		}
+		lastEnd = m[1]
+	}
+	if lastEnd < len(text) {
+		elements = append(elements, plainTextElement(text[lastEnd:]))
+	}
+	return elements
+}
+
+func plainTextElement(text string) map[string]any {
+	return map[string]any{"type": "text", "text": text}
+}
+
+func styledTextElement(text, style string) map[string]any {
+	return map[string]any{
+		"type":  "text",
+		"text":  text,
+		"style": map[string]any{style: true},
+	}
+}
+
+func linkElement(text, url string) map[string]any {
+	return map[string]any{"type": "link", "text": text, "url": url}
 }

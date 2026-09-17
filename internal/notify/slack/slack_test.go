@@ -109,8 +109,35 @@ func TestBuildTableBlock_ValidTable(t *testing.T) {
 		t.Errorf("header cell type = %v, want rich_text", header["type"])
 	}
 	body := rows[1][0]
-	if body["type"] != "raw_text" || body["text"] != "svc-a" {
-		t.Errorf("body cell = %+v, want raw_text svc-a", body)
+	if body["type"] != "rich_text" {
+		t.Errorf("body cell type = %v, want rich_text", body["type"])
+	}
+}
+
+func TestBuildTableBlock_BodyCellPreservesInlineFormatting(t *testing.T) {
+	block, ok := buildTableBlock("| Service | Notes |\n|---|---|\n| svc-a | before **notifier** after |")
+	if !ok {
+		t.Fatal("buildTableBlock() ok = false, want true")
+	}
+	rows := block["rows"].([][]map[string]any)
+	notesCell := rows[1][1]
+	section := notesCell["elements"].([]map[string]any)[0]
+	elements := section["elements"].([]map[string]any)
+
+	if len(elements) != 3 {
+		t.Fatalf("expected 3 elements (plain, bold, plain), got %+v", elements)
+	}
+	if elements[0]["text"] != "before " || elements[0]["style"] != nil {
+		t.Errorf("elements[0] = %+v, want plain %q", elements[0], "before ")
+	}
+	if elements[1]["text"] != "notifier" {
+		t.Errorf("elements[1].text = %v, want notifier", elements[1]["text"])
+	}
+	if style, ok := elements[1]["style"].(map[string]any); !ok || style["bold"] != true {
+		t.Errorf("elements[1].style = %+v, want bold", elements[1]["style"])
+	}
+	if elements[2]["text"] != " after" {
+		t.Errorf("elements[2] = %+v, want plain %q", elements[2], " after")
 	}
 }
 

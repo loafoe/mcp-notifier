@@ -110,6 +110,10 @@ func buildBlocks(content string) []map[string]any {
 
 	for _, seg := range segments {
 		if seg.isTable {
+			if block, ok := buildTableBlock(seg.content); ok {
+				blocks = append(blocks, block)
+				continue
+			}
 			tableText := renderTable(seg.content)
 			for _, chunk := range splitText(tableText, maxTextBlockLength) {
 				blocks = append(blocks, textSection(chunk))

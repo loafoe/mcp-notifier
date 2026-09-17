@@ -80,11 +80,48 @@ func TestConvertMarkdownToMrkdwn(t *testing.T) {
 	}
 }
 
-func TestBuildBlocks_TableBecomesFormattedText(t *testing.T) {
+func TestBuildBlocks_TableBecomesNativeTableBlock(t *testing.T) {
 	content := "before\n| a | b |\n|---|---|\n| 1 | 2 |\nafter"
 	blocks := buildBlocks(content)
 	if len(blocks) < 3 {
 		t.Fatalf("expected at least 3 blocks (text, table, text), got %d: %+v", len(blocks), blocks)
+	}
+	table, ok := blocks[1]["type"].(string)
+	if !ok || table != "table" {
+		t.Fatalf("expected middle block to be a native table block, got %+v", blocks[1])
+	}
+}
+
+func TestBuildTableBlock_ValidTable(t *testing.T) {
+	block, ok := buildTableBlock("| Name | Status |\n|---|---|\n| svc-a | OK |\n| svc-b | Degraded |")
+	if !ok {
+		t.Fatal("buildTableBlock() ok = false, want true")
+	}
+	if block["type"] != "table" {
+		t.Errorf("type = %v, want table", block["type"])
+	}
+	rows, ok := block["rows"].([][]map[string]any)
+	if !ok || len(rows) != 3 {
+		t.Fatalf("expected 3 rows (header + 2 body), got %+v", block["rows"])
+	}
+	header := rows[0][0]
+	if header["type"] != "rich_text" {
+		t.Errorf("header cell type = %v, want rich_text", header["type"])
+	}
+	body := rows[1][0]
+	if body["type"] != "raw_text" || body["text"] != "svc-a" {
+		t.Errorf("body cell = %+v, want raw_text svc-a", body)
+	}
+}
+
+func TestBuildTableBlock_TooManyRowsFallsBack(t *testing.T) {
+	var sb strings.Builder
+	sb.WriteString("| a |\n|---|\n")
+	for i := 0; i < maxTableRows+1; i++ {
+		sb.WriteString("| x |\n")
+	}
+	if _, ok := buildTableBlock(sb.String()); ok {
+		t.Fatal("buildTableBlock() ok = true, want false for table exceeding row limit")
 	}
 }
 

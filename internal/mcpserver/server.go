@@ -37,7 +37,7 @@ func New(cfg *config.Config, logger *slog.Logger) *mcp.Server {
 	if len(cfg.Slack.Webhooks) > 0 {
 		slackNotifier = slack.New(cfg.Slack.Webhooks)
 		registerSendTool(server, "send_slack_notification",
-			"Send a message to a Slack channel via an Incoming Webhook. Supports Markdown (bold, italics, links, lists, tables, code blocks), which is converted to Slack's mrkdwn format.",
+			"Send a message to a Slack channel via an Incoming Webhook. Markdown text (bold, italics, strikethrough, links, headers, lists, code blocks) is converted to Slack's mrkdwn format. Markdown tables (GitHub-style pipe tables) are rendered as native Slack Block Kit tables, with bold, italic, strikethrough, and link formatting preserved inside cells.",
 			slackNotifier, logger)
 	}
 

@@ -92,8 +92,9 @@ Flags (all overridable via env var):
 | `--path`     | `MCP_NOTIFIER_PATH`     | `/mcp`                          |
 
 `--transport stdio` runs the server over stdio for local MCP client testing
-(e.g. Claude Desktop, `mcp-inspector`). The HTTP transport serves streamable
-MCP at `--path` and a `/health` endpoint for Kubernetes probes.
+(e.g. Claude Desktop, `mcp-inspector`). The HTTP transport serves stateless
+MCP (Streamable HTTP with `Stateless: true`) at `--path` and a `/health`
+endpoint for Kubernetes probes.
 
 ## Container image
 

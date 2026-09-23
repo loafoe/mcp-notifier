@@ -66,7 +66,9 @@ func main() {
 func runHTTP(ctx context.Context, cfg *config.Config, logger *slog.Logger, addr, mcpPath string) error {
 	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
 		return mcpserver.New(cfg, logger)
-	}, nil)
+	}, &mcp.StreamableHTTPOptions{
+		Stateless: true,
+	})
 
 	mux := http.NewServeMux()
 	mux.Handle(mcpPath, handler)
